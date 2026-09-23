@@ -7,10 +7,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const container = document.getElementById('canvas-container');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e131f);
-scene.fog = new THREE.Fog(0x0e131f, 12, 35);
+scene.background = new THREE.Color(0x0f172a);
+scene.fog = new THREE.Fog(0x0f172a, 10, 30);
 
-const initialCameraPos = new THREE.Vector3(0, 3.5, 7.5);
+const initialCameraPos = new THREE.Vector3(0, 4, 8);
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.copy(initialCameraPos);
 
@@ -24,47 +24,105 @@ container.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.target.set(0, 2, 0);
-controls.maxPolarAngle = Math.PI / 2 + 0.02;
+controls.target.set(0, 2.2, 0);
+controls.maxPolarAngle = Math.PI / 2 - 0.01; // Evita mirar por debajo del piso
 
 // =============================================================================
 // 2. ILUMINACIÓN DEL LABORATORIO
 // =============================================================================
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+const ambientLight = new THREE.AmbientLight(0xe0f2fe, 0.55);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.8);
-dirLight.position.set(5, 10, 6);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
+dirLight.position.set(4, 8, 5);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(2048, 2048);
 scene.add(dirLight);
 
-// Luz puntual decorativa
-const flowerSpot = new THREE.PointLight(0x38bdf8, 1.2, 8);
-flowerSpot.position.set(0, 4.5, 1);
-scene.add(flowerSpot);
+// Luz de tubo fluorescente de laboratorio (cenital azulada)
+const labLight = new THREE.PointLight(0x38bdf8, 1.5, 12);
+labLight.position.set(0, 5, 0);
+scene.add(labLight);
 
-// Suelo y Rejilla
+// =============================================================================
+// 3. ENTORNO Y ESCENARIO DE FONDO (HABITACIÓN DE LABORATORIO / INVERNADERO)
+// =============================================================================
+// Piso de baldosas de laboratorio
 const floorMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(30, 30),
-    new THREE.MeshStandardMaterial({ color: 0x161b26, roughness: 0.9 })
+    new THREE.PlaneGeometry(24, 24),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7, metalness: 0.2 })
 );
 floorMesh.rotation.x = -Math.PI / 2;
 floorMesh.receiveShadow = true;
 scene.add(floorMesh);
 
-const gridHelper = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+const gridHelper = new THREE.GridHelper(24, 24, 0x475569, 0x334155);
 gridHelper.position.y = 0.005;
 scene.add(gridHelper);
 
-// =============================================================================
-// 3. CONSTRUCCIÓN DE LA PLANTA (JERARQUÍAS Y GEOMETRÍAS)
-// =============================================================================
-const plantRootGroup = new THREE.Group();
-scene.add(plantRootGroup);
+// Pared de fondo
+const backWall = new THREE.Mesh(
+    new THREE.PlaneGeometry(24, 10),
+    new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+);
+backWall.position.set(0, 5, -5);
+backWall.receiveShadow = true;
+scene.add(backWall);
 
+// Ventanal / Marco de invernadero en la pared trasera
+const windowFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 5, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 })
+);
+windowFrame.position.set(0, 5, -4.95);
+scene.add(windowFrame);
+
+// Cristal translúcido con brillo exterior
+const glassMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(9.6, 4.6),
+    new THREE.MeshPhysicalMaterial({
+        color: 0x38bdf8,
+        transmission: 0.85,
+        opacity: 0.35,
+        transparent: true,
+        roughness: 0.1
+    })
+);
+glassMesh.position.set(0, 5, -4.89);
+scene.add(glassMesh);
+
+// Mesa larga de trabajo científico
+const tableTop = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 0.2, 2.5),
+    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.4 })
+);
+tableTop.position.set(0, 1.2, 0);
+tableTop.castShadow = true;
+tableTop.receiveShadow = true;
+scene.add(tableTop);
+
+// Patas de la mesa (4 cilindros metálicos)
+const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 16);
+const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
+const legPositions = [
+    [-3.8, 0.6, -1.0],
+    [3.8, 0.6, -1.0],
+    [-3.8, 0.6, 1.0],
+    [3.8, 0.6, 1.0]
+];
+legPositions.forEach(([x, y, z]) => {
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(x, y, z);
+    leg.castShadow = true;
+    scene.add(leg);
+});
+
+// =============================================================================
+// 4. GENERADOR DE AZUCENAS MODULAR (PARA CREAR LAS 3 PLANTAS)
+// =============================================================================
 const clickableParts = [];
 const leavesArray = [];
+const plantStems = []; // Para animar el balanceo independiente
 
 function tagPart(mesh, name, desc) {
     mesh.userData = {
@@ -77,123 +135,138 @@ function tagPart(mesh, name, desc) {
     clickableParts.push(mesh);
 }
 
-// --- A. MACETA Y TIERRA ---
-const potMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
-const potMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.75, 1.6, 32), potMaterial);
-potMesh.position.y = 0.8;
-tagPart(potMesh, "Maceta Cerámica", "Contenedor poroso que sostiene el sustrato drenable y el bulbo subterráneo.");
-plantRootGroup.add(potMesh);
-
-const potRimMesh = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.08, 16, 32), potMaterial);
-potRimMesh.rotation.x = Math.PI / 2;
-potRimMesh.position.y = 1.6;
-tagPart(potRimMesh, "Borde de Maceta", "Refuerzo estructural superior de la maceta.");
-plantRootGroup.add(potRimMesh);
-
-const soilMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.05, 1.05, 0.1, 32),
-    new THREE.MeshStandardMaterial({ color: 0x2b1d14, roughness: 0.95 })
-);
-soilMesh.position.y = 1.55;
-tagPart(soilMesh, "Sustrato Húmedo", "Suelo enriquecido que aporta nutrientes y retiene agua para las raíces.");
-plantRootGroup.add(soilMesh);
-
-// --- B. TALLO PRINCIPAL ---
-const stemGroup = new THREE.Group();
-stemGroup.position.set(0, 1.6, 0);
-plantRootGroup.add(stemGroup);
-
-const stemHeight = 2.4;
-const stemMaterial = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.5 });
-const stemMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, stemHeight, 16), stemMaterial);
-stemMesh.position.y = stemHeight / 2;
-tagPart(stemMesh, "Tallo Principal (Caulinar)", "Estructura vascular de soporte; transporta agua y sales desde el bulbo hacia ápices y flores.");
-stemGroup.add(stemMesh);
-
-// --- C. HOJAS GENERADAS PROCEDURALMENTE ---
+// Carga de textura de hoja
 const textureLoader = new THREE.TextureLoader();
 const leafTexture = textureLoader.load('assets/leaf.png');
 
-const leafMaterial = new THREE.MeshStandardMaterial({
-    map: leafTexture,
-    roughness: 0.4,
-    side: THREE.DoubleSide,
-    transparent: true
-});
-const leafGeometry = new THREE.SphereGeometry(0.35, 16, 12);
-leafGeometry.scale(1.8, 0.15, 0.6);
+function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1) {
+    const plantRoot = new THREE.Group();
+    plantRoot.position.set(posX, 1.3, posZ); // Apoyada sobre la mesa (Y = 1.3)
+    plantRoot.scale.set(scale, scale, scale);
+    scene.add(plantRoot);
 
-const totalLeaves = 8;
-for (let i = 0; i < totalLeaves; i++) {
-    const leafGroup = new THREE.Group();
-    const heightPercent = (i + 1) / (totalLeaves + 1);
-    const leafY = heightPercent * (stemHeight - 0.3);
-    const angle = i * (Math.PI * 0.55);
+    // --- Maceta y Sustrato ---
+    const potMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.65 });
+    const potMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.5, 1.1, 32), potMat);
+    potMesh.position.y = 0.55;
+    tagPart(potMesh, `Maceta #${plantId}`, "Contenedor de terracota para cultivo controlado.");
+    plantRoot.add(potMesh);
 
-    leafGroup.position.set(0, leafY, 0);
-    leafGroup.rotation.y = angle;
+    const rimMesh = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.06, 16, 32), potMat);
+    rimMesh.rotation.x = Math.PI / 2;
+    rimMesh.position.y = 1.1;
+    tagPart(rimMesh, `Borde Maceta #${plantId}`, "Aro cerámico reforzado.");
+    plantRoot.add(rimMesh);
 
-    const leafMesh = new THREE.Mesh(leafGeometry, leafMaterial.clone());
-    leafMesh.position.set(0.4, 0, 0);
-    leafMesh.rotation.z = -0.25;
-    tagPart(leafMesh, `Hoja Lanceolada #${i + 1}`, "Órgano fotosintético encargado de la fijación de carbono y transpiración estomática.");
-    
-    leafGroup.add(leafMesh);
-    stemGroup.add(leafGroup);
-    leavesArray.push(leafMesh);
+    const soilMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.72, 0.72, 0.1, 32),
+        new THREE.MeshStandardMaterial({ color: 0x271c19, roughness: 0.95 })
+    );
+    soilMesh.position.y = 1.05;
+    tagPart(soilMesh, `Sustrato #${plantId}`, "Suelo estéril con turba y perlita para drenaje.");
+    plantRoot.add(soilMesh);
+
+    // --- Tallo y Jerarquía ---
+    const stemGroup = new THREE.Group();
+    stemGroup.position.set(0, 1.1, 0);
+    plantRoot.add(stemGroup);
+    plantStems.push({ group: stemGroup, offset: plantId * 1.5 });
+
+    const stemHeight = 1.8;
+    const stemMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.08, stemHeight, 16),
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.4 })
+    );
+    stemMesh.position.y = stemHeight / 2;
+    tagPart(stemMesh, `Tallo Caulinario #${plantId}`, "Haz vascular fotosintético de transporte floemático y xilemático.");
+    stemGroup.add(stemMesh);
+
+    // --- Hojas Helicoidales ---
+    const leafMat = new THREE.MeshStandardMaterial({
+        map: leafTexture,
+        roughness: 0.4,
+        side: THREE.DoubleSide,
+        transparent: true
+    });
+    const leafGeo = new THREE.SphereGeometry(0.28, 16, 12);
+    leafGeo.scale(1.7, 0.12, 0.55);
+
+    const numLeaves = 7;
+    for (let i = 0; i < numLeaves; i++) {
+        const leafNode = new THREE.Group();
+        const yPos = (i + 1) * (stemHeight / (numLeaves + 1.2));
+        const rotY = i * (Math.PI * 0.55) + plantId;
+
+        leafNode.position.set(0, yPos, 0);
+        leafNode.rotation.y = rotY;
+
+        const leafMesh = new THREE.Mesh(leafGeo, leafMat.clone());
+        leafMesh.position.set(0.3, 0, 0);
+        leafMesh.rotation.z = -0.22;
+        tagPart(leafMesh, `Hoja #${i + 1} (Planta ${plantId})`, "Órgano laminar fotosintético con abundantes estomas.");
+        leafNode.add(leafMesh);
+        stemGroup.add(leafNode);
+        leavesArray.push(leafMesh);
+    }
+
+    // --- Rama Lateral ---
+    const branchGroup = new THREE.Group();
+    branchGroup.position.set(0, 1.1, 0);
+    branchGroup.rotation.z = plantId % 2 === 0 ? -Math.PI / 4.5 : Math.PI / 4.5;
+    stemGroup.add(branchGroup);
+
+    const branchMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.05, 0.6, 12),
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.4 })
+    );
+    branchMesh.position.y = 0.3;
+    tagPart(branchMesh, `Pecíolo Auxiliar #${plantId}`, "Prolongación caulinar de soporte foliar.");
+    branchGroup.add(branchMesh);
+
+    const branchLeaf = new THREE.Mesh(leafGeo, leafMat.clone());
+    branchLeaf.position.set(0, 0.6, 0);
+    branchLeaf.rotation.z = 0.35;
+    tagPart(branchLeaf, `Hoja de Rama #${plantId}`, "Hoja axilar de fijación lumínica complementaria.");
+    branchGroup.add(branchLeaf);
+    leavesArray.push(branchLeaf);
+
+    // --- Flor Apical (Conos que abren hacia arriba) ---
+    const flowerGroup = new THREE.Group();
+    flowerGroup.position.set(0, stemHeight, 0);
+    stemGroup.add(flowerGroup);
+
+    // Pistilo central
+    const pistil = new THREE.Mesh(
+        new THREE.ConeGeometry(0.14, 0.35, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 })
+    );
+    pistil.position.y = 0.12;
+    tagPart(pistil, `Pistilo / Receptáculo #${plantId}`, "Órganos reproductivos y nectarios florales.");
+    flowerGroup.add(pistil);
+
+    // 6 Pétalos cónicos aplanados orientados en abanico
+    const petalGeo = new THREE.ConeGeometry(0.28, 0.95, 16);
+    petalGeo.scale(1.0, 1.0, 0.18);
+    const petalMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25 });
+
+    for (let p = 0; p < 6; p++) {
+        const petal = new THREE.Mesh(petalGeo, petalMat.clone());
+        const angle = (p * Math.PI) / 3;
+        petal.rotation.y = angle;
+        petal.rotation.z = -Math.PI / 4; // Abre hacia arriba de forma natural
+        petal.position.set(Math.cos(angle) * 0.32, 0.4, Math.sin(angle) * 0.32);
+        tagPart(petal, `Pétalo #${p + 1} (Planta ${plantId})`, "Tépalo corolino reflectante de luz visible y UV.");
+        flowerGroup.add(petal);
+    }
 }
 
-// --- D. RAMA LATERAL ---
-const branchGroup = new THREE.Group();
-branchGroup.position.set(0, 1.6, 0);
-branchGroup.rotation.z = Math.PI / 4;
-stemGroup.add(branchGroup);
-
-const branchMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.06, 0.8, 12),
-    stemMaterial
-);
-branchMesh.position.y = 0.4;
-tagPart(branchMesh, "Pecíolo / Rama Lateral", "Bifurcación que sostiene hojas auxiliares y brotes vegetativos.");
-branchGroup.add(branchMesh);
-
-const branchLeaf = new THREE.Mesh(leafGeometry, leafMaterial.clone());
-branchLeaf.position.set(0, 0.8, 0);
-branchLeaf.rotation.z = 0.4;
-tagPart(branchLeaf, "Hoja Auxiliar", "Hoja apical de la ramificación lateral.");
-branchGroup.add(branchLeaf);
-leavesArray.push(branchLeaf);
-
-// --- E. FLOR APICAL (Corregida para abrir hacia arriba) ---
-const flowerGroup = new THREE.Group();
-flowerGroup.position.set(0, stemHeight, 0);
-stemGroup.add(flowerGroup);
-
-const pistilMesh = new THREE.Mesh(
-    new THREE.ConeGeometry(0.18, 0.4, 16),
-    new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 })
-);
-pistilMesh.position.y = 0.15;
-tagPart(pistilMesh, "Receptáculo y Pistilo", "Centro floral que aloja los órganos reproductivos (estambres y estigma).");
-flowerGroup.add(pistilMesh);
-
-const petalGeo = new THREE.ConeGeometry(0.35, 1.1, 16);
-petalGeo.scale(1.0, 1.0, 0.2);
-const petalMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-
-for (let p = 0; p < 6; p++) {
-    const petalMesh = new THREE.Mesh(petalGeo, petalMat.clone());
-    const rotY = (p * Math.PI) / 3;
-    petalMesh.rotation.y = rotY;
-    // Apertura natural hacia arriba:
-    petalMesh.rotation.z = -Math.PI / 4;
-    petalMesh.position.set(Math.cos(rotY) * 0.4, 0.5, Math.sin(rotY) * 0.4);
-    tagPart(petalMesh, `Pétalo Blanco #${p + 1}`, "Tépalo corolino responsable de la atracción de polinizadores entomófilos.");
-    flowerGroup.add(petalMesh);
-}
+// Instanciar las 3 azucenas sobre la mesa:
+createLilyPlant(-2.4, 0, 0.9, 1); // Azucena izquierda (ligeramente más joven)
+createLilyPlant(0, 0, 1.05, 2);   // Azucena central (espécimen principal)
+createLilyPlant(2.4, 0, 0.95, 3);  // Azucena derecha
 
 // =============================================================================
-// 4. RAYCASTING: SELECCIÓN E INSPECCIÓN
+// 5. RAYCASTING: SELECCIÓN E INSPECCIÓN
 // =============================================================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -229,6 +302,7 @@ window.addEventListener('pointerdown', (event) => {
         }
         lastSelectedMesh = target;
 
+        // Resaltar en cian
         target.material.color.setHex(0x00ffff);
 
         const worldPos = new THREE.Vector3();
@@ -245,7 +319,7 @@ window.addEventListener('pointerdown', (event) => {
 });
 
 // =============================================================================
-// 5. BUCLE DE ANIMACIÓN
+// 6. BUCLE DE ANIMACIÓN
 // =============================================================================
 const clock = new THREE.Clock();
 let isAnimationActive = true;
@@ -255,11 +329,16 @@ function animate() {
 
     if (isAnimationActive) {
         const time = clock.getElapsedTime();
-        stemGroup.rotation.z = Math.sin(time * 1.8) * 0.04;
-        stemGroup.rotation.x = Math.cos(time * 1.3) * 0.03;
 
+        // Animar el balanceo de las 3 plantas con frecuencias desfasadas
+        plantStems.forEach(({ group, offset }) => {
+            group.rotation.z = Math.sin(time * 1.6 + offset) * 0.035;
+            group.rotation.x = Math.cos(time * 1.2 + offset) * 0.025;
+        });
+
+        // Ondulación de hojas
         leavesArray.forEach((leaf, idx) => {
-            leaf.rotation.x = Math.sin(time * 2.5 + idx) * 0.08;
+            leaf.rotation.x = Math.sin(time * 2.2 + idx) * 0.06;
         });
     }
 
@@ -269,7 +348,7 @@ function animate() {
 animate();
 
 // =============================================================================
-// 6. CONTROLES HTML
+// 7. CONTROLES HTML
 // =============================================================================
 const btnToggleAnim = document.getElementById('btn-toggle-anim');
 btnToggleAnim.addEventListener('click', () => {
@@ -277,7 +356,7 @@ btnToggleAnim.addEventListener('click', () => {
     btnToggleAnim.textContent = isAnimationActive ? '⏸️ Pausar Viento' : '▶️ Reanudar Viento';
 });
 
-const leafPalettes = [0x4caf50, 0xd4e157, 0x00b4d8, 0x2e7d32];
+const leafPalettes = [0x4caf50, 0xd4e157, 0x00b4d8, 0x16a34a];
 let paletteIdx = 0;
 document.getElementById('btn-color-leaves').addEventListener('click', () => {
     paletteIdx = (paletteIdx + 1) % leafPalettes.length;
@@ -298,7 +377,7 @@ btnToggleLeaves.addEventListener('click', () => {
 
 document.getElementById('btn-reset-cam').addEventListener('click', () => {
     camera.position.copy(initialCameraPos);
-    controls.target.set(0, 2, 0);
+    controls.target.set(0, 2.2, 0);
     controls.update();
 });
 
