@@ -2,14 +2,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // =============================================================================
-// 1. CONFIGURACIÓN BASE: CÁMARA, RENDERER Y ESCENA OSCURA
+// 1. CONFIGURACIÓN BASE: CÁMARA, RENDERER Y ESCENA CLARA
 // =============================================================================
 const container = document.getElementById('canvas-container');
 
 const scene = new THREE.Scene();
-// Fondo oscuro tipo laboratorio nocturno / estudio en penumbra
-scene.background = new THREE.Color(0x070a12);
-scene.fog = new THREE.Fog(0x070a12, 12, 35);
+// Fondo azul pastel suave tipo laboratorio clínico (agradable a la vista)
+scene.background = new THREE.Color(0xdbeafe);
+scene.fog = new THREE.Fog(0xdbeafe, 15, 38);
 
 const initialCameraPos = new THREE.Vector3(0, 4.0, 8.5);
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -30,26 +30,22 @@ controls.target.set(0, 2.1, 0);
 controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
 // =============================================================================
-// 2. ILUMINACIÓN EN PENUMBRA (MODO OSCURO AJUSTABLE)
+// 2. ILUMINACIÓN BALANCEADA DE LABORATORIO
 // =============================================================================
-// Luz ambiental muy baja para sombras marcadas
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.12);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
 scene.add(ambientLight);
 
-// Luz direccional tenue (atenuada a 0.3)
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
 dirLight.position.set(6, 11, 7);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(2048, 2048);
 scene.add(dirLight);
 
-// Luz puntual tenue de ventilación
-const windWindowLight = new THREE.DirectionalLight(0x38bdf8, 0.25);
+const windWindowLight = new THREE.DirectionalLight(0x7dd3fc, 0.6);
 windWindowLight.position.set(-14, 6, 2);
 scene.add(windWindowLight);
 
-// Luz fitocromo de cultivo (enfoque violeta sutil sobre las plantas)
-const growLight = new THREE.PointLight(0xa855f7, 0.8, 8);
+const growLight = new THREE.PointLight(0xa855f7, 1.4, 8);
 growLight.position.set(0, 5.5, 0);
 scene.add(growLight);
 
@@ -58,17 +54,17 @@ scene.add(growLight);
 // =============================================================================
 const floorMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(32, 32),
-    new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6, metalness: 0.2 })
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.25, metalness: 0.1 })
 );
 floorMesh.rotation.x = -Math.PI / 2;
 floorMesh.receiveShadow = true;
 scene.add(floorMesh);
 
-const gridHelper = new THREE.GridHelper(32, 32, 0x1e293b, 0x0f172a);
+const gridHelper = new THREE.GridHelper(32, 32, 0x94a3b8, 0xcbd5e1);
 gridHelper.position.y = 0.005;
 scene.add(gridHelper);
 
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.45 });
 const backWall = new THREE.Mesh(new THREE.PlaneGeometry(32, 14), wallMat);
 backWall.position.set(0, 7, -5.2);
 backWall.receiveShadow = true;
@@ -82,45 +78,45 @@ scene.add(leftWall);
 
 const baseboard = new THREE.Mesh(
     new THREE.BoxGeometry(32, 0.4, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3 })
 );
 baseboard.position.set(0, 0.2, -5.15);
 scene.add(baseboard);
 
-// Ventana posterior
+// Ventana posterior de observación
 const rearWindow = new THREE.Mesh(
     new THREE.BoxGeometry(11, 4.5, 0.15),
-    new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 })
 );
 rearWindow.position.set(0, 5.5, -5.12);
 scene.add(rearWindow);
 
 const glassMat = new THREE.MeshPhysicalMaterial({
-    color: 0x0284c7,
+    color: 0x7dd3fc,
     transparent: true,
-    opacity: 0.3,
-    roughness: 0.1,
-    transmission: 0.85
+    opacity: 0.4,
+    roughness: 0.05,
+    transmission: 0.92
 });
 const rearGlass = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 4.1), glassMat);
 rearGlass.position.set(0, 5.5, -5.04);
 scene.add(rearGlass);
 
-// Ventanas laterales
+// Ventanas laterales de ventilación
 const ventGroup = new THREE.Group();
 ventGroup.position.set(-10.9, 5.2, 0);
 ventGroup.rotation.y = Math.PI / 2;
 
 const ventFrame = new THREE.Mesh(
     new THREE.BoxGeometry(6.5, 3.8, 0.15),
-    new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
 );
 ventGroup.add(ventFrame);
 
 for (let i = -1.5; i <= 1.5; i += 0.4) {
     const louver = new THREE.Mesh(
         new THREE.BoxGeometry(6.1, 0.22, 0.02),
-        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5 })
+        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5 })
     );
     louver.position.set(0, i, 0.05);
     louver.rotation.x = -0.45;
@@ -131,8 +127,8 @@ scene.add(ventGroup);
 // =============================================================================
 // 4. MESAS Y EQUIPO CIENTÍFICO DECORATIVO
 // =============================================================================
-const steelMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.5 });
-const darkMetal = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.3 });
+const steelMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.35 });
+const darkMetal = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 });
 
 // Mesa Principal
 const mainTable = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.2, 2.6), steelMat);
@@ -153,7 +149,7 @@ const growLampFixture = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.15, 0.6), da
 growLampFixture.position.set(0, 5.7, 0);
 scene.add(growLampFixture);
 
-const growLedPanel = new THREE.Mesh(new THREE.PlaneGeometry(7.1, 0.45), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
+const growLedPanel = new THREE.Mesh(new THREE.PlaneGeometry(7.1, 0.45), new THREE.MeshBasicMaterial({ color: 0xd8b4fe }));
 growLedPanel.rotation.x = Math.PI / 2;
 growLedPanel.position.set(0, 5.62, 0);
 scene.add(growLedPanel);
@@ -179,7 +175,7 @@ scene.add(sampleTable);
 
 const centrifuge = new THREE.Mesh(
     new THREE.CylinderGeometry(0.35, 0.4, 0.35, 24),
-    new THREE.MeshStandardMaterial({ color: 0x1d4ed8, metalness: 0.5, roughness: 0.3 })
+    new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.4, roughness: 0.3 })
 );
 centrifuge.position.set(-6.8, 1.48, -0.3);
 centrifuge.castShadow = true;
@@ -221,7 +217,7 @@ scene.add(displayPanel);
 
 const keyboard = new THREE.Mesh(
     new THREE.BoxGeometry(0.85, 0.02, 0.3),
-    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 })
 );
 keyboard.position.set(6.8, 1.32, 0.3);
 scene.add(keyboard);
@@ -262,7 +258,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
     tagPart(tagMesh, `Ficha Clínica [${specimenCode}]`, "Registro de fenotipo, análisis morfológico y tasa transpiratoria.");
     plantRoot.add(tagMesh);
 
-    const potMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35 });
+    const potMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28 });
     const potMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.52, 1.1, 32), potMat);
     potMesh.position.y = 0.55;
     tagPart(potMesh, `Maceta Hidropónica #${plantId}`, "Contenedor de polímero biológicamente inerte con drenaje inferior.");
@@ -271,7 +267,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
     const rimMesh = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.06, 16, 32), potMat);
     rimMesh.rotation.x = Math.PI / 2;
     rimMesh.position.y = 1.1;
-    tagPart(rimMesh, `Aro de Maceta #${plantId}`, "Borde reinforced para manipulación.");
+    tagPart(rimMesh, `Aro de Maceta #${plantId}`, "Borde reforzado para manipulación y anclaje.");
     plantRoot.add(rimMesh);
 
     const soilMesh = new THREE.Mesh(
@@ -317,7 +313,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
         const leafMesh = new THREE.Mesh(leafGeo, leafMat.clone());
         leafMesh.position.set(0.32, 0, 0);
         leafMesh.rotation.z = -0.22;
-        tagPart(leafMesh, `Hoja #${i + 1} (${specimenCode})`, "Estructura laminar con estomas para transpiración.");
+        tagPart(leafMesh, `Hoja #${i + 1} (${specimenCode})`, "Estructura laminar con estomas para transpiración e intercambio gaseoso.");
         leafNode.add(leafMesh);
         stemGroup.add(leafNode);
         leavesArray.push(leafMesh);
@@ -333,7 +329,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
         new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4 })
     );
     branchMesh.position.y = 0.3;
-    tagPart(branchMesh, `Pecíolo Lateral #${plantId}`, "Ramificación caulinar secundaria orientada hacia la ventilación.");
+    tagPart(branchMesh, `Pecíolo Lateral #${plantId}`, "Ramificación caulinar secundaria orientada hacia la ventilación y la luz.");
     branchGroup.add(branchMesh);
 
     const branchLeaf = new THREE.Mesh(leafGeo, leafMat.clone());
@@ -357,7 +353,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
 
     const petalGeo = new THREE.ConeGeometry(0.28, 0.95, 16);
     petalGeo.scale(1.0, 1.0, 0.18);
-    const petalMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 });
+    const petalMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
 
     for (let p = 0; p < 6; p++) {
         const petal = new THREE.Mesh(petalGeo, petalMat.clone());
@@ -365,7 +361,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
         petal.rotation.y = angle;
         petal.rotation.z = -Math.PI / 4;
         petal.position.set(Math.cos(angle) * 0.32, 0.4, Math.sin(angle) * 0.32);
-        tagPart(petal, `Pétalo #${p + 1} (${specimenCode})`, "Tépalo corolino blanco reflejante de radiación.");
+        tagPart(petal, `Pétalo #${p + 1} (${specimenCode})`, "Tépalo corolino blanco reflejante de radiación visible.");
         flowerGroup.add(petal);
     }
 }
@@ -454,7 +450,7 @@ function animate() {
 animate();
 
 // =============================================================================
-// 8. CONTROLES HTML INTERACTIVOS (CON ATENUACIÓN TOTAL HASTA 0.0)
+// 8. CONTROLES HTML INTERACTIVOS (RANGO DE LUZ 0.0 A 4.0)
 // =============================================================================
 const btnToggleAnim = document.getElementById('btn-toggle-anim');
 btnToggleAnim.addEventListener('click', () => {
@@ -487,19 +483,18 @@ document.getElementById('btn-reset-cam').addEventListener('click', () => {
     controls.update();
 });
 
-// CONTROL DE LUZ CON OSCURIDAD TOTAL AL LLEGAR A 0.0
+// CONTROL DESLIZANTE DE LUZ (PERMITE DESDE 0.0 HASTA LUZ MÁXIMA)
 const sliderLight = document.getElementById('slider-light');
 const lightValText = document.getElementById('light-val');
 if (sliderLight) {
-    sliderLight.value = 0.3; // Inicia en penumbra tenue
-    if (lightValText) lightValText.textContent = "0.3";
+    sliderLight.value = 1.8;
+    if (lightValText) lightValText.textContent = "1.8";
 
     sliderLight.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        // Escala proporcional de la iluminación ambiental y direccional
         dirLight.intensity = val;
-        ambientLight.intensity = val * 0.35;
-        growLight.intensity = val * 1.5;
+        ambientLight.intensity = (val / 1.8) * 0.85;
+        growLight.intensity = (val / 1.8) * 1.4;
         
         if (lightValText) lightValText.textContent = val.toFixed(1);
     });
