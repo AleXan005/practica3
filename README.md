@@ -1,19 +1,19 @@
 # Practica 03: Construcción procedural de una planta 3D (Geometría, L-Systems y Modelos)
 
-* **Materia:** Bioinformatica y Biologia Computacional Avanzados
+* **Materia:** Bioinformática y Biología Computacional Avanzados
 * **Estudiantes:** Victoria Angélica Galarza Pérez y Fernando José Alexander Cruz Castro
 
 ---
 
 ## Descripción del Proyecto
-Este proyecto consiste en un **Laboratorio Botánico Interactivo 3D** desarrollado en Three.js. Representa un espécimen de azucena (*Lilium candidum*) modelado enteramente mediante el ensamblaje de geometrías primitivas y transformaciones en grafos de escena (`THREE.Group`), permitiendo inspeccionar la morfología botánica mediante **Raycasting** y manipular el entorno con una botonera HTML interactiva.
+Este proyecto consiste en un **Laboratorio Botánico Interactivo 3D** desarrollado en Three.js. Representa especímenes de azucena (*Lilium candidum*) modelados enteramente mediante el ensamblaje de geometrías primitivas y transformaciones en grafos de escena (`THREE.Group`), permitiendo inspeccionar la morfología botánica mediante **Raycasting** y manipular el entorno con una botonera HTML interactiva.
 
 ---
 
 ## Requisitos Técnicos Cumplidos
 
 1. **Geometrías Primitivas Utilizadas (4 tipos):**
-   * `CylinderGeometry`: Sustrato, tallo principal, ramificación lateral y cuerpo de la maceta.
+   * `CylinderGeometry`: Sustrato, tallo principal, ramificación lateral, patas de mesas y cuerpo de la maceta.
    * `SphereGeometry`: Hojas lanceoladas procedurales (deformadas mediante escala no uniforme).
    * `ConeGeometry`: Pétalos coronarios de la flor y pistilo central.
    * `TorusGeometry`: Borde superior reforzado de la maceta.
@@ -29,4 +29,4 @@ Este proyecto consiste en un **Laboratorio Botánico Interactivo 3D** desarrolla
    * Alternador de pigmentación foliar.
    * Toggle de visibilidad de follaje.
    * Reseteo suave de cámara OrbitControls.
-   * Control deslizante de potencia lumínica.
+   * Control deslizante de potencia lumínica con atenuación continua de 0.0 a 4.0.
