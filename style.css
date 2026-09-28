@@ -21,7 +21,6 @@ body {
     z-index: 1;
 }
 
-/* Tarjetas HUD flotantes */
 .hud-card {
     position: absolute;
     z-index: 10;
@@ -34,7 +33,6 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Ficha Anatómica (Izquierda) */
 #info-panel {
     top: 20px;
     left: 20px;
@@ -80,7 +78,7 @@ body {
 }
 
 .data-row span {
-    color: #f472b6;
+    color: #38bdf8;
     font-weight: 600;
 }
 
@@ -99,7 +97,6 @@ body {
     display: none;
 }
 
-/* Barra de Herramientas (Abajo Centrado) */
 #controls-toolbar {
     bottom: 24px;
     left: 50%;
