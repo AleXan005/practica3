@@ -7,8 +7,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const container = document.getElementById('canvas-container');
 
 const scene = new THREE.Scene();
-// Fondo azul pastel suave tipo laboratorio clínico (agradable a la vista)
-scene.background = new THREE.Color(0xdbeafe);
+const baseBgColor = new THREE.Color(0xdbeafe); // Azul pastel claro de laboratorio
+const darkBgColor = new THREE.Color(0x000000); // Negro absoluto para oscuridad total
+
+scene.background = baseBgColor.clone();
 scene.fog = new THREE.Fog(0xdbeafe, 15, 38);
 
 const initialCameraPos = new THREE.Vector3(0, 4.0, 8.5);
@@ -267,7 +269,7 @@ function createLilyPlant(posX, posZ, scale = 1.0, plantId = 1, specimenCode = "L
     const rimMesh = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.06, 16, 32), potMat);
     rimMesh.rotation.x = Math.PI / 2;
     rimMesh.position.y = 1.1;
-    tagPart(rimMesh, `Aro de Maceta #${plantId}`, "Borde reforzado para manipulación y anclaje.");
+    tagPart(rimMesh, `Aro de Maceta #${plantId}`, "Borde reinforced para manipulación y anclaje.");
     plantRoot.add(rimMesh);
 
     const soilMesh = new THREE.Mesh(
@@ -450,7 +452,7 @@ function animate() {
 animate();
 
 // =============================================================================
-// 8. CONTROLES HTML INTERACTIVOS (RANGO DE LUZ 0.0 A 4.0)
+// 8. CONTROLES HTML INTERACTIVOS (CON APAGADO ABSOLUTO A NEGRO EN 0.0)
 // =============================================================================
 const btnToggleAnim = document.getElementById('btn-toggle-anim');
 btnToggleAnim.addEventListener('click', () => {
@@ -483,19 +485,32 @@ document.getElementById('btn-reset-cam').addEventListener('click', () => {
     controls.update();
 });
 
-// CONTROL DESLIZANTE DE LUZ (PERMITE DESDE 0.0 HASTA LUZ MÁXIMA)
+// CONTROL DE LUZ CON APAGADO ABSOLUTO EN 0.0
 const sliderLight = document.getElementById('slider-light');
 const lightValText = document.getElementById('light-val');
+
 if (sliderLight) {
     sliderLight.value = 1.8;
     if (lightValText) lightValText.textContent = "1.8";
 
     sliderLight.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
+        const factor = val / 1.8; // Factor de atenuación proporcional
+
+        // 1. Apagar fuentes de luz
         dirLight.intensity = val;
-        ambientLight.intensity = (val / 1.8) * 0.85;
-        growLight.intensity = (val / 1.8) * 1.4;
-        
+        ambientLight.intensity = 0.85 * factor;
+        windWindowLight.intensity = 0.6 * factor;
+        growLight.intensity = 1.4 * factor;
+
+        // 2. Interpolar el color de fondo y niebla de claro a negro absoluto
+        scene.background.lerpColors(darkBgColor, baseBgColor, Math.min(factor, 1.0));
+        scene.fog.color.lerpColors(darkBgColor, baseBgColor, Math.min(factor, 1.0));
+
+        // 3. Ocultar paneles emisivos al llegar a la oscuridad
+        growLedPanel.visible = factor > 0.05;
+        displayPanel.visible = factor > 0.05;
+
         if (lightValText) lightValText.textContent = val.toFixed(1);
     });
 }
